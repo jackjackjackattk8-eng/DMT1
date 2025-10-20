@@ -79,10 +79,7 @@ should we be able to prove about *Wrong*?
 
 def foo {P : Prop} {α : Type}: (P → False) → P → α :=
 (
-  fun pf =>
-  (
-    fun (p : P) => nomatch (pf p)
-  )
+  fun pf => fun (p : P) => nomatch (pf p)
 )
 
 def bar {P : Prop} {α : Type} : ¬P → P → α
@@ -99,14 +96,19 @@ def noContra {P : Prop} : ¬ (P ∧ ¬ P)
 -- theorem porqValid {P : Prop} : P ∨ ¬P :=
 --
 
+open Classical
+
 -- #1
 -- Is this variant of one of DeMorgan's logically valid (provable)?
+
 theorem notDistribOverAnd {P Q : Prop} : ¬(P ∧ Q) → (¬P ∨ ¬Q)
 | h  =>     -- assume: ¬(P ∧ Q), (P ∧ Q) → False; show (¬P ∨ ¬Q)
   (Or.inl
     (fun (p : P) =>
       (
-        _
+        match em Q with
+        | (Or.inl q) => (h ⟨p, q⟩)
+        | (Or.inr nq) => (nq) -- This variant is not provable. There is no way to produce a proof of ¬Q from the assumption ¬(P ∧ Q) alone.
       )
     )
   )
@@ -136,10 +138,16 @@ fun h => match h with
     (
       fun pq =>   -- to prove ¬(P ∧ Q), assume it; then what?
       (
-        _
+        np pq.left
       )
     )
-  | (Or.inr nq) => _
+  | (Or.inr nq) =>
+  (
+    fun pq =>   -- to prove ¬(P ∧ Q), assume it; then what?
+    (
+      nq pq.right
+    )
+  )
 
 /- @@@
 #3
@@ -157,3 +165,28 @@ need, leaving them as ( _ ), properly indented on
 their own lines. Then fill in the remaining proofs
 as required.
 -/
+
+theorem notOr_iff_and_not {P Q : Prop} : ¬(P ∨ Q) ↔ (¬P ∧ ¬Q) :=
+(
+  Iff.intro
+    (
+      fun h =>
+      (
+        ⟨
+          (fun p => h (Or.inl p)),
+          (fun q => h (Or.inr q))
+        ⟩
+      )
+    )
+    (
+      fun ⟨np, nq⟩ =>
+      (
+        fun pq =>
+        (
+          match pq with
+          | (Or.inl p) => np p
+          | (Or.inr q) => nq q
+        )
+      )
+    )
+)
