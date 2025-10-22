@@ -204,7 +204,45 @@ able to. Understand where you got stuck. Leave
 you incomplete proof commented out with a quick
 comment explaining exactly why you get stuck.
 
+
 #2. Provide that if you accept (assume) the axiom
 of the excluded middle, then negation elimination
 is valid.
 @@@ -/
+
+-- #1 Attempt: prove ¬¬P → P constructively
+
+example : ∀ P : Prop, ¬¬P → P :=
+  by
+    -- Suppose P is any proposition and we have ¬¬P.
+    -- That means (¬P → False).  From this we must produce P.
+    -- But constructively, we have no way to *build* a term of type P
+    -- without already having a proof of P itself or some classical axiom.
+    -- Lean gets stuck here because there is no constructive rule that
+    -- allows removing double negation.
+    sorry    -- impossible without classical reasoning
+
+
+/-
+Explanation:
+Lean cannot complete this proof because from ¬¬P we cannot construct P.
+In constructive logic, "not not P" means only that assuming ¬P leads to
+a contradiction, not that P is true.  To derive P you need an additional
+axiom such as the law of the excluded middle.
+-/
+
+
+-- #2 Now assume excluded middle and prove ¬¬P → P
+
+example (em : ∀ P : Prop, P ∨ ¬P) : ∀ P : Prop, ¬¬P → P :=
+  fun P nnp =>
+    match em P with
+    | Or.inl p  => p                     -- case: P is true
+    | Or.inr np => False.elim (nnp np)   -- case: ¬P contradicts ¬¬P
+
+
+/-
+With excluded middle (P ∨ ¬P) we can case-split:
+if P is true we’re done, if ¬P leads to contradiction under ¬¬P,
+so P follows.  Thus excluded middle implies double-negation elimination.
+-/
